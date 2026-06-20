@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% block title %}VaultKey — My Vault{% endblock %}
+
+{% block extra_style %}
+<style>
+  .stats-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+  }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.9rem 1.25rem;
+    flex: 1;
+    min-width: 140px;
+  }
+  .stat-val { font-family: var(--mono); font-size: 1.6rem; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.1rem; }
+
+  .search-bar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    align-items: center;
+  }
+  .search-bar input {
+    flex: 1;
+    background: var(--card);
+    border-color: var(--border);
+  }
+
+  .entries-table { width: 100%; border-collapse: collapse; }
+  .entries-table th {
+    text-align: left;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+  }
+  .entries-table td {
+    padding: 0.85rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.875rem;
+    vertical-align: middle;
+  }
+  .entries-table tr:last-child td { border-bottom: none; }
+  .entries-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .site-cell { display: flex; flex-direction: column; gap: 0.2rem; }
+  .site-name { font-weight: 600; }
+  .site-url  { font-size: 0.75rem; color: var(--muted); }
+  .site-url a { color: var(--accent2); text-decoration: none; }
+  .site-url a:hover { text-decoration: underline; }
+
+  .pwd-cell {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .pwd-dots { letter-spacing: 0.1em; color: var(--muted); }
+  .pwd-plain { display: none; }
+  .toggle-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0.15rem;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .toggle-btn:hover { color: var(--text); }
+  .copy-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+  .copy-btn:hover { background: var(--border); color: var(--text); }
+
+  .actions-cell { display: flex; gap: 0.4rem; }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+  }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+  .empty-state h3 { font-size: 1.1rem; color: var(--text); margin-bottom: 0.5rem; }
+  .empty-state p  { font-size: 0.875rem; margin-bottom: 1.5rem; }
+
+  .table-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Your Vault</h1>
+    <p class="sub">All credentials are encrypted at rest with AES-256-GCM</p>
+  </div>
+  <a href="{{ url_for('vault.add') }}" class="btn btn-primary">+ Add entry</a>
+</div>
+
+<div class="stats-row">
+  <div class="stat">
+    <div class="stat-val">{{ entries|length }}</div>
+    <div class="stat-label">Stored entries</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" style="color:var(--accent2)">AES-256</div>
+    <div class="stat-label">Encryption</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" style="color:var(--warning)">bcrypt</div>
+    <div class="stat-label">Auth hashing</div>
+  </div>
+</div>
+
+{% if entries %}
+<div class="search-bar">
+  <input type="text" id="searchInput" placeholder="Filter entries…" />
+</div>
+
+<div class="table-wrap">
+  <table class="entries-table" id="entriesTable">
+    <thead>
+      <tr>
+        <th>Site</th>
+        <th>Username</th>
+        <th>Password</th>
+        <th>Updated</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in entries %}
+      <tr data-search="{{ (e.site_name ~ e.username ~ (e.site_url or ''))|lower }}">
+        <td>
+          <div class="site-cell">
+            <span class="site-name">{{ e.site_name }}</span>
+            {% if e.site_url %}
+            <span class="site-url">
+              <a href="{{ e.site_url }}" target="_blank" rel="noopener noreferrer">
+                {{ e.site_url[:40] }}{% if e.site_url|length > 40 %}…{% endif %}
+              </a>
+            </span>
+            {% endif %}
+          </div>
+        </td>
+        <td style="font-family:var(--mono);font-size:0.85rem;">{{ e.username }}</td>
+        <td>
+          <div class="pwd-cell">
+            <span class="pwd-dots" id="dots-{{ e.id }}">••••••••••</span>
+            <span class="pwd-plain" id="plain-{{ e.id }}">{{ e.password }}</span>
+            <button class="toggle-btn" onclick="togglePwd({{ e.id }})" title="Show/hide">👁</button>
+            <button class="copy-btn" onclick="copyPwd({{ e.id }}, this)" title="Copy">Copy</button>
+          </div>
+        </td>
+        <td style="font-size:0.78rem;color:var(--muted);font-family:var(--mono);">
+          {{ e.updated[:10] }}
+        </td>
+        <td>
+          <div class="actions-cell">
+            <a href="{{ url_for('vault.edit', entry_id=e.id) }}"
+               class="btn btn-outline btn-sm">Edit</a>
+            <form method="POST"
+                  action="{{ url_for('vault.delete', entry_id=e.id) }}"
+                  onsubmit="return confirm('Delete entry for {{ e.site_name }}?')">
+              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="table-wrap">
+  <div class="empty-state">
+    <div class="icon">🔒</div>
+    <h3>Your vault is empty</h3>
+    <p>Add your first password entry to get started.</p>
+    <a href="{{ url_for('vault.add') }}" class="btn btn-primary">+ Add first entry</a>
+  </div>
+</div>
+{% endif %}
+
+<script>
+function togglePwd(id) {
+  const dots  = document.getElementById('dots-'  + id);
+  const plain = document.getElementById('plain-' + id);
+  const hidden = plain.style.display === 'none' || plain.style.display === '';
+  dots.style.display  = hidden ? 'none'   : '';
+  plain.style.display = hidden ? 'inline' : 'none';
+}
+
+async function copyPwd(id, btn) {
+  const plain = document.getElementById('plain-' + id).textContent;
+  await navigator.clipboard.writeText(plain);
+  const orig = btn.textContent;
+  btn.textContent = '✓';
+  btn.style.color = 'var(--accent)';
+  setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
+}
+
+// Live search filter
+document.getElementById('searchInput')?.addEventListener('input', function () {
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('#entriesTable tbody tr').forEach(row => {
+    row.style.display = row.dataset.search.includes(q) ? '' : 'none';
+  });
+});
+</script>
+{% endblock %}

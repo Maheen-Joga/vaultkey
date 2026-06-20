@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% block title %}VaultKey — {{ action }} Entry{% endblock %}
+
+{% block extra_style %}
+<style>
+  .form-wrap { max-width: 580px; margin: 0 auto; }
+
+  .gen-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .gen-row input[type="range"] {
+    width: auto;
+    flex: 1;
+    min-width: 100px;
+    padding: 0;
+    background: none;
+    border: none;
+    accent-color: var(--accent);
+  }
+  .gen-label {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--muted);
+    min-width: 30px;
+    text-align: center;
+  }
+  .gen-options {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 0.4rem;
+  }
+  .gen-options label { text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--muted); cursor: pointer; }
+  .gen-options input[type="checkbox"] { width: auto; cursor: pointer; }
+
+  .pwd-input-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .pwd-input-row input { flex: 1; }
+  .show-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 7px;
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .show-btn:hover { border-color: var(--muted); color: var(--text); }
+
+  .strength-wrap { margin-top: 0.4rem; }
+  .strength-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .strength-fill { height: 100%; width: 0; border-radius: 2px; transition: all 0.3s; }
+  .strength-text { font-size: 0.72rem; color: var(--muted); margin-top: 0.25rem; }
+
+  .form-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.75rem;
+    align-items: center;
+  }
+
+  .back-link {
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-bottom: 1.25rem;
+  }
+  .back-link:hover { color: var(--text); }
+
+  .section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 1.5rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-wrap">
+  <a class="back-link" href="{{ url_for('vault.index') }}">← Back to vault</a>
+
+  <div class="page-header">
+    <div>
+      <h1>{{ action }} Entry</h1>
+      <p class="sub">
+        {% if action == 'Add' %}Save a new encrypted credential{% else %}Update this credential{% endif %}
+      </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <form method="POST" autocomplete="off">
+
+      <p class="section-title">Site details</p>
+
+      <div class="form-group">
+        <label for="site_name">Site / Service name <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="site_name" name="site_name"
+               value="{{ entry.site_name if entry else '' }}"
+               placeholder="e.g. GitHub" required maxlength="200" autofocus />
+      </div>
+
+      <div class="form-group">
+        <label for="site_url">URL (optional)</label>
+        <input type="url" id="site_url" name="site_url"
+               value="{{ entry.site_url if entry else '' }}"
+               placeholder="https://github.com" maxlength="500" />
+      </div>
+
+      <p class="section-title">Credentials</p>
+
+      <div class="form-group">
+        <label for="username">Username / Email <span style="color:var(--danger)">*</span></label>
+        <input type="text" id="username" name="username"
+               value="{{ entry.username if entry else '' }}"
+               placeholder="you@example.com" required maxlength="200" />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password <span style="color:var(--danger)">*</span></label>
+        <div class="pwd-input-row">
+          <input type="password" id="password" name="password"
+                 value="{{ entry.plain_password if entry else '' }}"
+                 placeholder="Enter or generate a password" required />
+          <button type="button" class="show-btn" onclick="toggleShow()">👁 Show</button>
+        </div>
+
+        <div class="strength-wrap">
+          <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+          <div class="strength-text" id="strengthText"></div>
+        </div>
+
+        <!-- Password generator controls -->
+        <div class="gen-row" style="margin-top:0.75rem;">
+          <span style="font-size:0.8rem;color:var(--muted);">Generate:</span>
+          <input type="range" id="pwdLen" min="12" max="64" value="20"
+                 oninput="document.getElementById('lenLabel').textContent=this.value" />
+          <span class="gen-label" id="lenLabel">20</span>
+          <button type="button" class="btn btn-outline btn-sm" onclick="generatePwd()">
+            ⚡ Generate
+          </button>
+        </div>
+        <div class="gen-options">
+          <label>
+            <input type="checkbox" id="useSymbols" checked />
+            Include symbols
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Notes (optional)</label>
+        <textarea id="notes" name="notes"
+                  placeholder="Security questions, 2FA backup codes, etc.">{{ entry.plain_notes if entry else '' }}</textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+          {% if action == 'Add' %}Save entry{% else %}Update entry{% endif %}
+        </button>
+        <a href="{{ url_for('vault.index') }}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// ── Show/hide toggle ──────────────────────────────────────────────────────────
+function toggleShow() {
+  const inp = document.getElementById('password');
+  inp.type  = inp.type === 'password' ? 'text' : 'password';
+}
+
+// ── Strength meter ────────────────────────────────────────────────────────────
+const colors = ['#f87171','#f87171','#fbbf24','#4ade80','#22d3ee'];
+const labels  = ['','Weak','Fair','Good','Strong'];
+
+document.getElementById('password').addEventListener('input', function () {
+  updateStrength(this.value);
+});
+
+function updateStrength(v) {
+  let score = 0;
+  if (v.length >= 10) score++;
+  if (v.length >= 16) score++;
+  if (/[A-Z]/.test(v) && /[a-z]/.test(v)) score++;
+  if (/\d/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+  score = Math.min(score, 4);
+  const fill = document.getElementById('strengthFill');
+  const txt  = document.getElementById('strengthText');
+  fill.style.width      = (score * 25) + '%';
+  fill.style.background = colors[score];
+  txt.textContent       = v ? labels[score] : '';
+  txt.style.color       = colors[score];
+}
+
+// ── Password generator ────────────────────────────────────────────────────────
+async function generatePwd() {
+  const len     = document.getElementById('pwdLen').value;
+  const symbols = document.getElementById('useSymbols').checked;
+  const url     = `/vault/generate?length=${len}&symbols=${symbols}`;
+  try {
+    const r   = await fetch(url, { credentials: 'same-origin' });
+    const data = await r.json();
+    const inp  = document.getElementById('password');
+    inp.value  = data.password;
+    inp.type   = 'text';           // show it so user sees what was generated
+    updateStrength(data.password);
+  } catch (e) {
+    alert('Could not generate password. Are you logged in?');
+  }
+}
+
+// Run strength on load (edit mode has existing value)
+updateStrength(document.getElementById('password').value);
+</script>
+{% endblock %}

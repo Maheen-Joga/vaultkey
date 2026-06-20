@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}VaultKey — Sign in{% endblock %}
+
+{% block extra_style %}
+<style>
+  .auth-wrap {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  .auth-box {
+    width: 100%;
+    max-width: 400px;
+  }
+  .auth-logo {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  .auth-logo .symbol {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  .auth-logo h1 {
+    font-family: var(--mono);
+    font-size: 1.6rem;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+  .auth-logo p {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 0.3rem;
+  }
+  .auth-footer {
+    text-align: center;
+    margin-top: 1.25rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .auth-footer a { color: var(--accent); text-decoration: none; }
+  .auth-footer a:hover { text-decoration: underline; }
+  .badge-row {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+  }
+  .badge {
+    font-size: 0.7rem;
+    font-family: var(--mono);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.25rem 0.7rem;
+    color: var(--muted);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <span class="symbol">🔐</span>
+      <h1>VaultKey</h1>
+      <p>Your encrypted password vault</p>
+    </div>
+
+    <div class="card">
+      <form method="POST" action="{{ url_for('auth.login') }}" autocomplete="off">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username"
+                 autocomplete="username" required autofocus />
+        </div>
+        <div class="form-group">
+          <label for="password">Master Password</label>
+          <input type="password" id="password" name="password"
+                 autocomplete="current-password" required />
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:0.5rem;">
+          Unlock vault →
+        </button>
+      </form>
+    </div>
+
+    <p class="auth-footer">
+      No account? <a href="{{ url_for('auth.register') }}">Create one</a>
+    </p>
+
+    <div class="badge-row">
+      <span class="badge">AES-256-GCM</span>
+      <span class="badge">bcrypt</span>
+      <span class="badge">PBKDF2</span>
+      <span class="badge">SQLite encrypted</span>
+    </div>
+  </div>
+</div>
+{% endblock %}

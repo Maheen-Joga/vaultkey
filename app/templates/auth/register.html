@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}VaultKey — Create account{% endblock %}
+
+{% block extra_style %}
+<style>
+  .auth-wrap {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+  .auth-box { width: 100%; max-width: 420px; }
+  .auth-logo { text-align: center; margin-bottom: 2rem; }
+  .auth-logo .symbol { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
+  .auth-logo h1 { font-family: var(--mono); font-size: 1.6rem; color: var(--accent); }
+  .auth-logo p  { font-size: 0.85rem; color: var(--muted); margin-top: 0.3rem; }
+  .auth-footer  { text-align: center; margin-top: 1.25rem; font-size: 0.85rem; color: var(--muted); }
+  .auth-footer a { color: var(--accent); text-decoration: none; }
+  .hint { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; }
+  .strength-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 0.5rem;
+    overflow: hidden;
+  }
+  .strength-fill { height: 100%; width: 0; border-radius: 2px; transition: all 0.3s; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <span class="symbol">🔐</span>
+      <h1>VaultKey</h1>
+      <p>Create your secure vault</p>
+    </div>
+
+    <div class="card">
+      <form method="POST" action="{{ url_for('auth.register') }}" autocomplete="off">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username"
+                 autocomplete="off" required autofocus maxlength="64" />
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email"
+                 autocomplete="off" required maxlength="254" />
+        </div>
+        <div class="form-group">
+          <label for="password">Master Password</label>
+          <input type="password" id="password" name="password"
+                 autocomplete="new-password" required minlength="10" />
+          <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+          <p class="hint">Minimum 10 characters. This password encrypts your vault — choose wisely.</p>
+        </div>
+        <div class="form-group">
+          <label for="confirm">Confirm Password</label>
+          <input type="password" id="confirm" name="confirm"
+                 autocomplete="new-password" required />
+        </div>
+        <button type="submit" class="btn btn-primary"
+                style="width:100%;justify-content:center;margin-top:0.5rem;">
+          Create vault →
+        </button>
+      </form>
+    </div>
+
+    <p class="auth-footer">
+      Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
+    </p>
+  </div>
+</div>
+
+<script>
+const pw    = document.getElementById('password');
+const fill  = document.getElementById('strengthFill');
+const colors = ['#f87171','#fbbf24','#4ade80','#22d3ee'];
+pw.addEventListener('input', () => {
+  const v = pw.value;
+  let score = 0;
+  if (v.length >= 10) score++;
+  if (/[A-Z]/.test(v) && /[a-z]/.test(v)) score++;
+  if (/\d/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+  fill.style.width  = (score * 25) + '%';
+  fill.style.background = colors[score - 1] || 'transparent';
+});
+</script>
+{% endblock %}
