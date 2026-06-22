@@ -1,18 +1,3 @@
-#!/usr/bin/env bash
-# =============================================================================
-# setup.sh — VaultKey: one-command environment setup
-# =============================================================================
-# Usage:  bash setup.sh
-#
-# This script:
-#   1. Checks Python 3.9+
-#   2. Creates a virtual environment
-#   3. Installs all dependencies
-#   4. Generates a secure SECRET_KEY
-#   5. Initialises the SQLite database with schema + demo data
-#   6. Starts the Flask development server
-# =============================================================================
-
 set -e
 
 PYTHON=python3
